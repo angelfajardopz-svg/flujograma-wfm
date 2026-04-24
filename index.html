@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Flujograma WFM + Trello | ITSINFOCOM</title>
+<style>
+  :root{
+    --c-blue-dark:#005A9D;
+    --c-blue:#00AEEF;
+    --c-green:#8DC63F;
+    --c-lime:#B5D334;
+    --c-orange:#F58220;
+    --c-bg:#0a0e17;
+    --c-bg2:#111826;
+    --c-panel:#161f30;
+    --c-line:rgba(255,255,255,0.12);
+    --c-text:#e8eef7;
+    --c-muted:#8d9bb3;
+    --c-yes:#8DC63F;
+    --c-no:#F58220;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--c-bg);color:var(--c-text);font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh;overflow-x:hidden}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(0,174,239,0.12), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(245,130,32,0.10), transparent 50%),
+      radial-gradient(ellipse at center, rgba(141,198,63,0.05), transparent 70%),
+      var(--c-bg);
+  }
+
+  /* HEADER */
+  .header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(10,14,23,0.85);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--c-line);
+    padding:18px 32px;
+  }
+  .header-inner{
+    max-width:1400px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:16px}
+  .brand img{height:52px;width:auto;filter:drop-shadow(0 4px 12px rgba(0,174,239,0.25))}
+  .brand-text h1{
+    font-size:18px;font-weight:700;letter-spacing:0.5px;
+    background:linear-gradient(90deg,var(--c-blue) 0%, var(--c-green) 50%, var(--c-orange) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand-text p{font-size:12px;color:var(--c-muted);margin-top:2px;letter-spacing:0.3px}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap}
+  .legend-item{
+    display:flex;align-items:center;gap:8px;
+    background:var(--c-panel);
+    padding:7px 14px;border-radius:20px;
+    border:1px solid var(--c-line);
+    font-size:12px;font-weight:500;
+  }
+  .legend-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px currentColor}
+  .dot-ops{background:var(--c-blue);color:var(--c-blue)}
+  .dot-wfm{background:var(--c-green);color:var(--c-green)}
+  .dot-cli{background:var(--c-orange);color:var(--c-orange)}
+
+  /* HERO */
+  .hero{text-align:center;padding:48px 24px 20px}
+  .hero h2{
+    font-size:clamp(26px,4vw,42px);font-weight:800;margin-bottom:10px;letter-spacing:-0.5px;
+    background:linear-gradient(135deg,#fff 0%, var(--c-blue) 60%, var(--c-green) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p{color:var(--c-muted);font-size:15px;max-width:640px;margin:0 auto;line-height:1.6}
+  .hero .hint{
+    margin-top:20px;display:inline-flex;align-items:center;gap:8px;
+    background:rgba(0,174,239,0.08);border:1px solid rgba(0,174,239,0.3);
+    color:var(--c-blue);padding:8px 16px;border-radius:30px;font-size:13px;font-weight:500;
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(0,174,239,0.35)}
+    50%{box-shadow:0 0 0 10px rgba(0,174,239,0)}
+  }
+
+  /* CONTROLS */
+  .controls{
+    display:flex;justify-content:center;gap:10px;padding:0 20px 24px;flex-wrap:wrap;
+  }
+  .btn{
+    background:var(--c-panel);color:var(--c-text);
+    border:1px solid var(--c-line);padding:9px 18px;border-radius:10px;
+    font-size:13px;font-weight:500;cursor:pointer;transition:all .25s ease;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{background:var(--c-bg2);border-color:var(--c-blue);transform:translateY(-1px)}
+  .btn.primary{background:linear-gradient(135deg,var(--c-blue),var(--c-blue-dark));border-color:transparent}
+  .btn.primary:hover{filter:brightness(1.15)}
+
+  /* FLUJO CONTAINER */
+  .flow{
+    max-width:900px;margin:0 auto;padding:20px 20px 80px;
+    position:relative;
+  }
+  /* línea central vertical */
+  .flow::before{
+    content:'';position:absolute;left:50%;top:40px;bottom:40px;
+    width:2px;transform:translateX(-50%);
+    background:linear-gradient(180deg,
+      var(--c-blue) 0%,
+      var(--c-blue) 25%,
+      var(--c-green) 50%,
+      var(--c-orange) 75%,
+      var(--c-green) 100%);
+    opacity:0.35;z-index:0;
+  }
+
+  .step{
+    position:relative;display:flex;justify-content:center;margin-bottom:36px;
+    opacity:0;transform:translateY(24px);
+    animation:fadeUp .6s ease forwards;
+  }
+  .step:nth-child(n){animation-delay:calc(var(--i,0) * 0.04s)}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+
+  .step-number{
+    position:absolute;left:50%;top:-14px;transform:translateX(-50%);
+    background:var(--c-bg);border:2px solid var(--c-blue);
+    width:28px;height:28px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:var(--c-blue);z-index:3;
+    box-shadow:0 0 0 4px var(--c-bg);
+  }
+  .step.wfm .step-number{border-color:var(--c-green);color:var(--c-green)}
+  .step.cli .step-number{border-color:var(--c-orange);color:var(--c-orange)}
+
+  /* NODO: base */
+  .node{
+    position:relative;z-index:2;
+    width:min(640px,100%);
+    background:linear-gradient(135deg,var(--c-panel) 0%,var(--c-bg2) 100%);
+    border:1px solid var(--c-line);border-left:4px solid var(--c-blue);
+    border-radius:14px;padding:18px 22px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    transition:all .3s ease;
+  }
+  .step.wfm .node{border-left-color:var(--c-green)}
+  .step.cli .node{border-left-color:var(--c-orange)}
+  .node:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.4);border-color:rgba(255,255,255,0.2)}
+
+  .node-header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .node-icon{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+    background:rgba(0,174,239,0.15);color:var(--c-blue);
+  }
+  .step.wfm .node-icon{background:rgba(141,198,63,0.15);color:var(--c-green)}
+  .step.cli .node-icon{background:rgba(245,130,32,0.15);color:var(--c-orange)}
+
+  .node-title{flex:1}
+  .node-title h3{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
+  .node-area{font-size:11px;color:var(--c-muted);letter-spacing:0.8px;text-transform:uppercase;margin-top:2px}
+
+  .node-body{margin-top:10px;font-size:14px;color:#c8d3e6;line-height:1.6}
+  .node-body ul{margin:8px 0 0 18px}
+  .node-body li{margin-bottom:4px}
+  .node-body a{color:var(--c-blue);text-decoration:none;border-bottom:1px dashed rgba(0,174,239,0.4)}
+  .node-body a:hover{color:var(--c-green);border-color:var(--c-green)}
+  .chip{
+    display:inline-block;background:rgba(0,174,239,0.1);color:var(--c-blue);
+    padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;
+    border:1px solid rgba(0,174,239,0.25);
+  }
+  .step.wfm .chip{background:rgba(141,198,63,0.1);color:var(--c-green);border-color:rgba(141,198,63,0.25)}
+  .step.cli .chip{background:rgba(245,130,32,0.1);color:var(--c-orange);border-color:rgba(245,130,32,0.25)}
+
+  /* INICIO / FIN (óvalo) */
+  .terminator{
+    background:linear-gradient(135deg,var(--c-blue-dark) 0%,var(--c-blue) 100%);
+    color:#fff;border:none;border-radius:60px;
+    padding:18px 40px;text-align:center;
+    box-shadow:0 8px 32px rgba(0,174,239,0.4);
+    font-size:18px;font-weight:800;letter-spacing:2px;
+    min-width:200px;
+  }
+  .terminator.end{
+    background:linear-gradient(135deg,var(--c-green) 0%,#5ea02b 100%);
+    box-shadow:0 8px 32px rgba(141,198,63,0.4);
+  }
+  .terminator-icon{font-size:22px;margin-right:10px}
+
+  /* DECISIÓN (rombo) */
+  .decision{
+    position:relative;z-index:2;
+    width:min(520px,92%);
+    cursor:pointer;
+  }
+  .diamond{
+    background:linear-gradient(135deg,#2d3a52 0%,#1d283c 100%);
+    border:2px solid var(--c-orange);
+    border-radius:14px;
+    padding:22px 28px;text-align:center;
+    box-shadow:0 8px 24px rgba(245,130,32,0.2);
+    transition:all .3s ease;
+    position:relative;
+  }
+  .diamond::before{
+    content:'';position:absolute;inset:-2px;border-radius:14px;
+    background:linear-gradient(135deg,var(--c-orange),var(--c-blue),var(--c-green));
+    z-index:-1;opacity:0;transition:opacity .3s;
+  }
+  .decision:hover .diamond::before{opacity:1}
+  .decision:hover .diamond{transform:scale(1.02)}
+  .diamond-label{
+    font-size:11px;color:var(--c-orange);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;
+  }
+  .diamond-question{
+    font-size:17px;font-weight:700;color:#fff;line-height:1.4;
+  }
+  .diamond-cta{
+    margin-top:12px;font-size:12px;color:var(--c-muted);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .diamond-cta .arrow-ico{transition:transform .3s}
+  .decision.open .diamond-cta .arrow-ico{transform:rotate(90deg)}
+
+  /* RAMAS Sí/No */
+  .branches{
+    display:grid;grid-template-columns:1fr;gap:14px;
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height .5s ease,opacity .4s ease,margin .3s;
+    margin-top:0;
+  }
+  .decision.open .branches{max-height:2000px;opacity:1;margin-top:18px}
+  @media(min-width:700px){
+    .branches{grid-template-columns:1fr 1fr;gap:18px}
+  }
+
+  .branch{
+    border-radius:12px;padding:16px 18px;
+    background:var(--c-panel);border:1px solid var(--c-line);
+    position:relative;
+    transform:translateY(-10px);opacity:0;
+    transition:all .4s ease;
+  }
+  .decision.open .branch{transform:translateY(0);opacity:1}
+  .decision.open .branch.no{transition-delay:.1s}
+  .branch.yes{border-top:3px solid var(--c-yes)}
+  .branch.no{border-top:3px solid var(--c-no)}
+  .branch-badge{
+    position:absolute;top:-12px;left:16px;
+    padding:4px 14px;border-radius:20px;
+    font-size:12px;font-weight:800;letter-spacing:1.5px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  }
+  .branch.yes .branch-badge{background:var(--c-yes);color:#0a0e17}
+  .branch.no .branch-badge{background:var(--c-no);color:#fff}
+  .branch h4{font-size:14px;font-weight:700;color:#fff;margin:10px 0 6px}
+  .branch ul{list-style:none;padding:0}
+  .branch ul li{
+    font-size:13px;color:#c8d3e6;padding:6px 0 6px 22px;position:relative;line-height:1.5;
+  }
+  .branch ul li::before{
+    content:'›';position:absolute;left:8px;color:var(--c-blue);font-weight:bold;font-size:16px;line-height:1.2;
+  }
+  .branch.yes ul li::before{color:var(--c-yes)}
+  .branch.no ul li::before{color:var(--c-no)}
+
+  /* Conector triangular inferior */
+  .connector{
+    display:flex;justify-content:center;margin:-20px 0 16px;
+    position:relative;z-index:1;
+  }
+  .connector::after{
+    content:'';width:0;height:0;
+    border-left:7px solid transparent;border-right:7px solid transparent;
+    border-top:10px solid rgba(255,255,255,0.25);
+  }
+
+  /* FOOTER */
+  .footer{
+    text-align:center;padding:40px 20px;color:var(--c-muted);font-size:12px;
+    border-top:1px solid var(--c-line);margin-top:40px;
+  }
+  .footer strong{color:var(--c-blue)}
+
+  /* accesos rápidos flotantes */
+  .floater{
+    position:fixed;right:20px;bottom:20px;z-index:50;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .floater button{
+    width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--c-panel);color:var(--c-text);
+    border:1px solid var(--c-line);font-size:18px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.4);transition:all .2s;
+  }
+  .floater button:hover{background:var(--c-blue);color:#fff;transform:scale(1.1)}
+
+  @media(max-width:640px){
+    .header{padding:14px 16px}
+    .brand img{height:40px}
+    .brand-text h1{font-size:15px}
+    .hero{padding:32px 16px 12px}
+    .flow::before{left:18px}
+    .step{justify-content:flex-start;padding-left:10px}
+    .step-number{left:18px}
+    .node,.decision{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <img src="flujograma_assets/logo.png" alt="ITSINFOCOM"/>
+      <div class="brand-text">
+        <h1>FLUJOGRAMA · CREACIÓN DE INFORMES</h1>
+        <p>Work Force Management + Trello · Proceso Operativo Integral</p>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot dot-ops"></span>Operaciones</div>
+      <div class="legend-item"><span class="legend-dot dot-wfm"></span>WFM</div>
+      <div class="legend-item"><span class="legend-dot dot-cli"></span>Cliente</div>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <h2>Proceso Integral de Informes</h2>
+  <p>Flujograma vertical interactivo. Toca cada decisión <strong style="color:var(--c-orange)">◆</strong> para desplegar las rutas <strong style="color:var(--c-green)">Sí</strong> y <strong style="color:var(--c-orange)">No</strong>.</p>
+  <div class="hint">👆 Toca los rombos de decisión para explorar las ramas</div>
+</section>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn primary" onclick="toggleAll(true)">➕ Expandir todo</button>
+  <button class="btn" onclick="toggleAll(false)">➖ Colapsar todo</button>
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+</div>
+
+<!-- FLOW -->
+<main class="flow" id="flow">
+
+  <!-- INICIO -->
+  <div class="step" style="--i:0">
+    <div class="terminator"><span class="terminator-icon">▶</span>INICIO</div>
+  </div>
+
+  <!-- 1. Solicitud Forms -->
+  <div class="step" style="--i:1">
+    <div class="step-number">1</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">📋</div>
+        <div class="node-title"><h3>Envío de Solicitud</h3><div class="node-area">Operaciones</div></div>
+      </div>
+      <div class="node-body">
+        Se realiza el envío de la solicitud de reporte a través de <strong>Microsoft Forms</strong>.
+        <div style="margin-top:10px">
+          <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=OWi4cqAfLEaSOjPNS8H3hkd6ISLvHKVErpUWnJ0_6RJUQzBFNFA4WkM5RTI1UkQ2UzZVTkdEUTJBSi4u" target="_blank">🔗 Abrir formulario de solicitud</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Automatización Trello -->
+  <div class="step wfm" style="--i:2">
+    <div class="step-number">2</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">⚙️</div>
+        <div class="node-title"><h3>Automatización Inicial</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        Microsoft Forms genera automáticamente:
+        <ul>
+          <li>Creación de <strong>tarjeta en Trello</strong></li>
+          <li>Asignación a la lista <span class="chip">📥 Solicitado</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Clasificación -->
+  <div class="step" style="--i:3">
+    <div class="step-number">3</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">🔍</div>
+        <div class="node-title"><h3>Clasificación del Reporte</h3><div class="node-area">Operaciones</div></div>
+      </div>
+      <div class="node-body">
+        Identificar los siguientes elementos de la solicitud:
+        <ul>
+          <li>Proyecto</li>
+          <li>¿Nuevo o existente?</li>
+          <li>Tipo de reporte</li>
+          <li>¿Cuenta con todos los insumos? (Bases de Datos, Accesos, Parámetros)</li>
+          <li>Fuente de la información</li>
+          <li>Método de publicación</li>
+          <li>Recurrencia</li>
+          <li>Alcance de la solicitud</li>
+          <li>Plazo máximo de entrega (estimado)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. DECISIÓN: Insumos -->
+  <div class="step" style="--i:4">
+    <div class="step-number">4</div>
+    <div class="decision" onclick="toggleDec(this)">
+      <div class="diamond">
+        <div class="diamond-label">◆ Decisión · Operaciones</div>
+        <div class="diamond-question">¿Cuenta con insumos completos?</div>
+        <div class="diamond-cta"><span class="arrow-ico">▸</span> Toca para ver rutas</div>
+      </div>
+      <div class="branches">
+        <div class="branch yes">
+          <div class="branch-badge">✓ SÍ</div>
+          <h4>Continuar proceso</h4>
+          <ul>
+            <li>Se procede con la solicitud estándar</li>
+            <li>Pasar al siguiente paso de definición funcional</li>
+          </ul>
+        </div>
+        <div class="branch no">
+          <div class="branch-badge">✗ NO</div>
+          <h4>Solicitar información adicional</h4>
+          <ul>
+            <li>Requerir al solicitante los insumos faltantes</li>
+            <li>Realizar la solicitud con los insumos completos</li>
+            <li>Reintentar validación</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. DECISIÓN: Sesión -->
+  <div class="step" style="--i:5">
+    <div class="step-number">5</div>
+    <div class="decision" onclick="toggleDec(this)">
+      <div class="diamond">
+        <div class="diamond-label">◆ Decisión · Operaciones</div>
+        <div class="diamond-question">¿Requiere sesión para definir la solicitud?</div>
+        <div class="diamond-cta"><span class="arrow-ico">▸</span> Toca para ver rutas</div>
+      </div>
+      <div class="branches">
+        <div class="branch yes">
+          <div class="branch-badge">✓ SÍ</div>
+          <h4>Coordinar sesión de trabajo</h4>
+          <ul>
+            <li>Se agenda sesión con las partes involucradas</li>
+            <li>Definir alcance y requerimientos en detalle</li>
+            <li>Documentar acuerdos de la reunión</li>
+          </ul>
+        </div>
+        <div class="branch no">
+          <div class="branch-badge">✗ NO</div>
+          <h4>Continuar proceso</h4>
+          <ul>
+            <li>Avanzar directamente al detalle de la solicitud</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Detalle solicitud -->
+  <div class="step" style="--i:6">
+    <div class="step-number">6</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">📝</div>
+        <div class="node-title"><h3>Detalle de la Solicitud</h3><div class="node-area">Operaciones</div></div>
+      </div>
+      <div class="node-body">
+        Detallar la solicitud y su contenido de la manera <strong>más clara y precisa</strong>.
+        Incluir todos los puntos importantes a tomar en cuenta para evitar re-trabajos posteriores.
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. DECISIÓN: Solicitud completa -->
+  <div class="step wfm" style="--i:7">
+    <div class="step-number">7</div>
+    <div class="decision" onclick="toggleDec(this)">
+      <div class="diamond">
+        <div class="diamond-label">◆ Decisión · WFM</div>
+        <div class="diamond-question">¿La solicitud está completa?</div>
+        <div class="diamond-cta"><span class="arrow-ico">▸</span> El encargado revisa la tarjeta</div>
+      </div>
+      <div class="branches">
+        <div class="branch yes">
+          <div class="branch-badge">✓ SÍ</div>
+          <h4>Asignación</h4>
+          <ul>
+            <li>Mover tarjeta a <strong>"Asignado"</strong></li>
+            <li>Asignar <strong>estadista responsable</strong></li>
+            <li>Continuar hacia ejecución</li>
+          </ul>
+        </div>
+        <div class="branch no">
+          <div class="branch-badge">✗ NO</div>
+          <h4>Rechazo de la tarjeta</h4>
+          <ul>
+            <li>Mover tarjeta a <strong>"Rechazado"</strong></li>
+            <li>Agregar comentario con el motivo</li>
+            <li>Notificar al solicitante</li>
+            <li>🔚 <strong>FIN del proceso</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Ejecución -->
+  <div class="step wfm" style="--i:8">
+    <div class="step-number">8</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">⚡</div>
+        <div class="node-title"><h3>Ejecución</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        <ul>
+          <li>Mover tarjeta a <span class="chip">🔄 En proceso</span></li>
+          <li>Inicio del <strong>desarrollo del informe</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Planificación -->
+  <div class="step wfm" style="--i:9">
+    <div class="step-number">9</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">⏱️</div>
+        <div class="node-title"><h3>Planificación · Tiempos Estándar</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        <ul style="list-style:none;margin-left:0;columns:2;column-gap:24px">
+          <li>📊 <strong>Template:</strong> 48 h <em>(efectividad + resúmenes)</em></li>
+          <li>📋 <strong>Tabla F:</strong> 48 h</li>
+          <li>🌳 <strong>Árbol de efectividad:</strong> 8 h</li>
+          <li>📅 <strong>Control diario:</strong> 24 h</li>
+          <li>💰 <strong>Facturación:</strong> 8 h</li>
+          <li>👤 <strong>O<Ocupación:</strong> 3 h</li>
+          <li>📈 <strong>Uso de actividades:</strong> 3 h</li>
+          <li>🔖 <strong>Marcadores con base:</strong> 25 min</li>
+          <li>🆕 <strong>Marcadores sin base:</strong> 45 min</li>
+          <li>✂️ <strong>Cortes de rendimiento:</strong> 4 h (mínimo 48 h en casos complejos)</li>
+          <li>🔍 <strong>Auditoría personal:</strong> 4 h</li>
+          <li>📑 <strong>Reporte PPP:</strong> 64 h</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Modelo Inicial -->
+  <div class="step wfm" style="--i:10">
+    <div class="step-number">10</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">📦</div>
+        <div class="node-title"><h3>Entrega Modelo Inicial</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        <ul>
+          <li>Mover tarjeta a <span class="chip">🧪 Modelo inicial</span></li>
+          <li>Entregar <strong>versión preliminar</strong> al solicitante</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. DECISIÓN: Validación cliente -->
+  <div class="step cli" style="--i:11">
+    <div class="step-number">11</div>
+    <div class="decision" onclick="toggleDec(this)">
+      <div class="diamond" style="border-color:var(--c-orange)">
+        <div class="diamond-label">◆ Decisión · Cliente / Operaciones</div>
+        <div class="diamond-question">¿El modelo inicial es aprobado?</div>
+        <div class="diamond-cta"><span class="arrow-ico">▸</span> Revisión del cliente</div>
+      </div>
+      <div class="branches">
+        <div class="branch yes">
+          <div class="branch-badge">✓ SÍ</div>
+          <h4>Continuar con versión final</h4>
+          <ul>
+            <li>Se procede a generar el informe definitivo</li>
+            <li>Pasar a publicación</li>
+          </ul>
+        </div>
+        <div class="branch no">
+          <div class="branch-badge">✗ NO</div>
+          <h4>Solicitar ajustes</h4>
+          <ul>
+            <li>Mover tarjeta a <strong>"Cambios"</strong></li>
+            <li>Recibir los ajustes solicitados por el cliente</li>
+            <li>Notificar por correo el estado</li>
+            <li>🔄 Regresar a <strong>"En proceso"</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. Versión Final -->
+  <div class="step wfm" style="--i:12">
+    <div class="step-number">12</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">✅</div>
+        <div class="node-title"><h3>Versión Final</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        <ul>
+          <li>Mover tarjeta a <span class="chip">🏁 Finalizado</span></li>
+          <li>Generar <strong>informe definitivo</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. Publicación -->
+  <div class="step wfm" style="--i:13">
+    <div class="step-number">13</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">🚀</div>
+        <div class="node-title"><h3>Publicación</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        Publicar el informe en el canal correspondiente:
+        <div style="margin-top:8px">
+          <span class="chip">📁 SharePoint</span>
+          <span class="chip">💾 Drive</span>
+          <span class="chip">📧 Correo</span>
+          <span class="chip">🌐 Intranet</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. Notificación Final -->
+  <div class="step wfm" style="--i:14">
+    <div class="step-number">14</div>
+    <div class="node">
+      <div class="node-header">
+        <div class="node-icon">📨</div>
+        <div class="node-title"><h3>Notificación Final</h3><div class="node-area">Work Force Management</div></div>
+      </div>
+      <div class="node-body">
+        Enviar correo al solicitante con:
+        <ul>
+          <li><strong>Estado final</strong> del reporte</li>
+          <li><strong>Ubicación</strong> del reporte publicado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIN -->
+  <div class="step" style="--i:15">
+    <div class="terminator end"><span class="terminator-icon">■</span>FIN</div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>Desarrollado para <strong>ITSINFOCOM</strong> · Flujograma WFM + Trello · &copy; 2026</p>
+</footer>
+
+<!-- FAB -->
+<div class="floater">
+  <button onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Ir arriba">↑</button>
+  <button onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Ir abajo">↓</button>
+</div>
+
+<script>
+  function toggleDec(el){
+    el.classList.toggle('open');
+  }
+  function toggleAll(open){
+    document.querySelectorAll('.decision').forEach(d=>{
+      if(open) d.classList.add('open'); else d.classList.remove('open');
+    });
+  }
+  // Animación progresiva en scroll
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.style.opacity=1; });
+  },{threshold:0.1});
+  document.querySelectorAll('.step').forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>
